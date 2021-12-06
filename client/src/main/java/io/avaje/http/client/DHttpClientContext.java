@@ -11,7 +11,12 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 
 class DHttpClientContext implements HttpClientContext {
 
@@ -31,9 +36,11 @@ class DHttpClientContext implements HttpClientContext {
   private final boolean withAuthToken;
   private final AuthTokenProvider authTokenProvider;
   private final AtomicReference<AuthToken> tokenRef = new AtomicReference<>();
+  private final Executor executor;
+  private final AtomicLong activeAsync = new AtomicLong();
   private int loggingMaxBody = 1_000;
 
-  DHttpClientContext(HttpClient httpClient, String baseUrl, Duration requestTimeout, BodyAdapter bodyAdapter, RetryHandler retryHandler, RequestListener requestListener, AuthTokenProvider authTokenProvider, RequestIntercept intercept) {
+  DHttpClientContext(HttpClient httpClient, String baseUrl, Duration requestTimeout, BodyAdapter bodyAdapter, RetryHandler retryHandler, RequestListener requestListener, AuthTokenProvider authTokenProvider, RequestIntercept intercept, Executor executor) {
     this.httpClient = httpClient;
     this.baseUrl = baseUrl;
     this.requestTimeout = requestTimeout;
@@ -43,6 +50,7 @@ class DHttpClientContext implements HttpClientContext {
     this.authTokenProvider = authTokenProvider;
     this.withAuthToken = authTokenProvider != null;
     this.requestIntercept = intercept;
+    this.executor = executor;
   }
 
   @Override
@@ -173,7 +181,13 @@ class DHttpClientContext implements HttpClientContext {
   }
 
   <T> CompletableFuture<HttpResponse<T>> sendAsync(HttpRequest.Builder requestBuilder, HttpResponse.BodyHandler<T> bodyHandler) {
-    return httpClient.sendAsync(requestBuilder.build(), bodyHandler);
+    activeAsync.incrementAndGet();
+    if (executor == null) {
+      // defaults to ForkJoinPool.commonPool()
+      return httpClient.sendAsync(requestBuilder.build(), bodyHandler);
+    } else {
+      return httpClient.sendAsync(requestBuilder.build(), bodyHandler).whenCompleteAsync((r, t)-> {}, executor);
+    }
   }
 
   <T> BodyContent write(T bean, String contentType) {
@@ -192,12 +206,46 @@ class DHttpClientContext implements HttpClientContext {
     return bodyAdapter.listReader(cls).read(content);
   }
 
+  @Override
+  public boolean shutdown(long timeout, TimeUnit timeUnit) {
+    long timeoutMillis = TimeUnit.MILLISECONDS.convert(timeout, timeUnit);
+    if (!waitForActiveAsync(timeoutMillis)) {
+      return false;
+    }
+    if (executor instanceof ExecutorService) {
+      ExecutorService es = (ExecutorService)executor;
+      es.shutdown();
+      try {
+        return es.awaitTermination(timeout, timeUnit);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        System.getLogger("io.avaje.http.client").log(System.Logger.Level.WARNING, "Interrupt on shutdown", e);
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private boolean waitForActiveAsync(long millis) {
+    final long until = System.currentTimeMillis() + millis;
+    do {
+      if (activeAsync.get() <= 0) {
+        return true;
+      }
+      LockSupport.parkNanos(10_000_000);
+    } while (System.currentTimeMillis() < until);
+    return false;
+  }
+
   void afterResponse(DHttpClientRequest request) {
     if (requestListener != null) {
       requestListener.response(request.listenerEvent());
     }
     if (requestIntercept != null) {
       requestIntercept.afterResponse(request.response(), request);
+    }
+    if (request.startAsyncNanos > 0) {
+      activeAsync.decrementAndGet();
     }
   }
 

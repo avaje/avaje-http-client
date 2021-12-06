@@ -9,6 +9,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The HTTP client context that we use to build and process requests.
@@ -114,6 +115,19 @@ public interface HttpClientContext {
    * @return The decoded content
    */
   byte[] decodeContent(String encoding, byte[] content);
+
+  /**
+   * When this context is created with an Executor and that is an ExecutorService
+   * then this will wait for async requests to be processed and then shutdown the
+   * ExecutorService.
+   *
+   * @param timeout  The maximum time to wait for async processes to complete
+   * @param timeUnit The time unit for maximum wait time
+   * @return True when successfully waited for async requests and shutdown
+   *
+   * @see HttpClientContext.Builder#executor(Executor)
+   */
+  boolean shutdown(long timeout, TimeUnit timeUnit);
 
   /**
    * Builds the HttpClientContext.

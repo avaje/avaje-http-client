@@ -8,7 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class DHttpClientRequestTest {
 
-  final DHttpClientContext context = new DHttpClientContext(null, null, null, null, null, null, null, null);
+  final DHttpClientContext context = new DHttpClientContext(null, null, null, null, null, null, null, null, null);
 
   @Test
   void suppressLogging_listenerEvent_expect_suppressedPayloadContent() {

@@ -159,7 +159,7 @@ final class DHttpClientContextBuilder implements HttpClientContext.Builder {
       // register the builtin request/response logging
       requestListener(new RequestLogger());
     }
-    return new DHttpClientContext(client, baseUrl, requestTimeout, bodyAdapter, retryHandler, buildListener(), authTokenProvider, buildIntercept());
+    return new DHttpClientContext(client, baseUrl, requestTimeout, bodyAdapter, retryHandler, buildListener(), authTokenProvider, buildIntercept(), executor);
   }
 
   private RequestListener buildListener() {

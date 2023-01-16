@@ -1,3 +1,14 @@
+# MOVED !!!
+
+This project has been moved to be a sub-module of avaje-http.
+
+It is now at: https://github.com/avaje/avaje-http/tree/master/http-client
+
+
+-----------------
+
+
+
 [![Build](https://github.com/avaje/avaje-http-client/actions/workflows/build.yml/badge.svg)](https://github.com/avaje/avaje-http-client/actions/workflows/build.yml)
 [![Maven Central](https://img.shields.io/maven-central/v/io.avaje/avaje-http-client.svg?label=Maven%20Central)](https://mvnrepository.com/artifact/io.avaje/avaje-http-client)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/avaje/avaje-http-client/blob/master/LICENSE)

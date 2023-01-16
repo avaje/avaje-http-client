@@ -64,7 +64,7 @@ final class DHttpClientContext implements HttpClientContext, SpiHttpClient {
     }
     try {
       Class<?> implementationClass = implementationClass(clientInterface);
-      Constructor<?> constructor = implementationClass.getConstructor(HttpClient.class);
+      Constructor<?> constructor = implementationClass.getConstructor(HttpClientContext.class);
       return (T) constructor.newInstance(this);
     } catch (Exception e) {
       String cn = implementationClassName(clientInterface, "HttpClient");

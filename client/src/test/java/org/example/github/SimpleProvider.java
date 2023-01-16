@@ -1,8 +1,9 @@
 package org.example.github;
 
-import io.avaje.http.client.HttpApiProvider;
-import io.avaje.http.client.HttpClientContext;
 import org.example.github.httpclient.Simple$HttpClient;
+
+import io.avaje.http.client.HttpApiProvider;
+import io.avaje.http.client.HttpClient;
 
 public class SimpleProvider implements HttpApiProvider<Simple> {
 
@@ -12,7 +13,7 @@ public class SimpleProvider implements HttpApiProvider<Simple> {
   }
 
   @Override
-  public Simple provide(HttpClientContext client) {
+  public Simple provide(HttpClient client) {
     return new Simple$HttpClient(client);
   }
 }

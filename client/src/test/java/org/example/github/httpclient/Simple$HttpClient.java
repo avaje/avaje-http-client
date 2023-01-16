@@ -13,12 +13,12 @@ import java.util.List;
 
 public class Simple$HttpClient implements Simple {
 
-  private final HttpClientContext context;
+  private final HttpClient context;
   private final BodyReader<Repo> readRepo;
   private final BodyWriter writeRepo;
 //  private final BodyConverter<List<Repo>, String> toListOfRepo;
 
-  public Simple$HttpClient(HttpClientContext context) {
+  public Simple$HttpClient(HttpClient context) {
     this.context = context;
     this.readRepo = context.converters().beanReader(Repo.class);
     this.writeRepo = context.converters().beanWriter(Repo.class);
@@ -75,7 +75,7 @@ public class Simple$HttpClient implements Simple {
     }
 
     @Override
-    public Simple provide(HttpClientContext client) {
+    public Simple provide(HttpClient client) {
       return new Simple$HttpClient(client);
     }
   }
